@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Tank Problem</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 30px; background: #f5f5f5; }
+        h1 { margin-bottom: 20px; }
+        .controls { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
+        input { padding: 8px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; width: 300px; }
+        button { padding: 8px 16px; font-size: 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1976D2; }
+        #result { font-size: 20px; font-weight: bold; margin: 15px 0; }
+        #visualization { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; }
+        .legend { display: flex; gap: 20px; margin-top: 15px; font-size: 14px; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-box { width: 20px; height: 20px; border: 1px solid #999; }
+    </style>
+</head>
+<body>
+    <h1>Water Tank Problem</h1>
+    <div class="controls">
+        <input type="text" id="input" placeholder="Enter heights e.g. 0,4,0,0,0,6,0,6,4,0" value="0,4,0,0,0,6,0,6,4,0">
+        <button onclick="find_units()">Calculate Units Stored</button>
+    </div>
+    <div id="result"></div>
+    <div id="visualization"></div>
+    <div class="legend">
+        <div class="legend-item"><div class="legend-box" style="background:#FFD600;"></div> Block</div>
+        <div class="legend-item"><div class="legend-box" style="background:#2196F3;"></div> Water</div>
+    </div>
+
+    <script>
+        function water_storage(block_heights) {
+            const n = block_heights.length;
+            let left_max = 0, right_max = 0, units = 0;
+            const waterLevel = new Array(n).fill(0);
+            const left_maxArr = block_heights.map((_, i) => left_max = Math.max(left_max, block_heights[i]));
+            const right_maxArr = new Array(n).fill(0);
+            for (let i = n - 1; i >= 0; i--) {
+                right_max = Math.max(right_max, block_heights[i]);
+                right_maxArr[i] = right_max;
+            }
+            for (let i = 0; i < n; i++) {
+                waterLevel[i] = Math.max(0, Math.min(left_maxArr[i], right_maxArr[i]) - block_heights[i]);
+                units += waterLevel[i];
+            }
+            return { units, waterLevel };
+        }
+
+        function find_units() {
+            const raw = document.getElementById('input').value.trim();
+            const block_heights = raw.replace(/[\[\]\s]/g, '').split(',').map(Number);
+            if (block_heights.some(isNaN) || block_heights.length === 0) {
+                document.getElementById('result').textContent = 'Invalid input';
+                return;
+            }
+            const { units, waterLevel } = water_storage(block_heights);
+            document.getElementById('result').textContent = `Output: ${units} Units`;
+            drawSVG(block_heights, waterLevel);
+        }
+
+        function drawSVG(block_heights, waterLevel) {
+            const cellSize = 40;
+            const cols = block_heights.length;
+            const maxH = Math.max(...block_heights.map((h, i) => h + waterLevel[i]), ...block_heights);
+            const rows = maxH || 1;
+            const w = cols * cellSize, h = rows * cellSize;
+            let svg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">`;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const x = c * cellSize, y = r * cellSize;
+                    const level = rows - r;
+                    let fill = 'white';
+                    if (level <= block_heights[c]) fill = '#FFD600';
+                    else if (level <= block_heights[c] + waterLevel[c]) fill = '#2196F3';
+                    svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${fill}" stroke="#bbb" stroke-width="1"/>`;
+                }
+            }
+            svg += '</svg>';
+            document.getElementById('visualization').innerHTML = svg;
+        }
+
+        find_units();
+    </script>
+</body>
+</html>
